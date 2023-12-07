@@ -17,7 +17,8 @@ This is a crude attempt to mirror canvasapi for Google Classroom.
 ## Quickstart
 
 Download your own `token.json` from [Google Cloud console](https://console.cloud.google.com/apis/credentials), then put the following in a `script.py`.
-```pytyon
+
+```python
 from classroomapi.classroom import Classroom 
 
 classroom = Classroom("token.json")
