@@ -1,28 +1,67 @@
 from classroomapi.classroom_object import ClassroomObject
-from classroomapi.assignment import Assignment
+from classroomapi.coursework import CourseWork, Assignment, ShortAnswerQuestion, MultipleChoiceQuestion
 from classroomapi.user import Student, Teacher
 from classroomapi.topic import Topic
-from classroomapi.material import Material
+from classroomapi.material import CourseWorkMaterial
 
 class Course(ClassroomObject):
     def __init__(self, attributes, service):
         self.service = service
         super().__init__(attributes)
+    
+    def discriminate_coursework(self, coursework):
+        match coursework['CourseWorkType']:
+            case 'ASSIGNMENT':
+                return Assignment(coursework)
+            case 'SHORT_ANSWER_QUESTION':
+                return ShortAnswerQuestion(coursework)
+            case 'MULTIPLE_CHOICE_QUESTION':
+                return MultipleChoiceQuestion(coursework)
+            case _ :
+                return CourseWork(coursework)
+
+    def patch(self, body, update_mask):
+        return Course(self.service.courses().patch(courseId=self.id, body=body, updateMask=update_mask).execute(), self.service)
+
+    edit = patch
+
+    def get_coursework(self, assignment_id=None):
+        if assignment_id is None:
+            coursework = self.service.courses().courseWork().list(courseId=self.id, courseWorkStates=['PUBLISHED','DRAFT']).execute().get('courseWork',[])
+            return [self.discriminate_coursework(x) for x in coursework]
+        else:
+            coursework = self.service.courses().courseWork().get(courseId=self.id, id=assignment_id).execute()
+            return self.discriminate_coursework(coursework)
 
     def get_assignments(self):
-        return [Assignment(x) for x in self.service.courses().courseWork().list(courseId=self.id, courseWorkStates=['PUBLISHED','DRAFT']).execute()['courseWork']]
+        return [x for x in self.get_coursework() if isinstance(x, Assignment)]
     
     def get_assignment(self, assignment_id):
-        return Assignment(self.service.courses().courseWork().get(courseId=self.id, id=assignment_id).execute())
+        coursework = self.get_coursework(assignment_id)
+        return coursework if isinstance(coursework, Assignment) else None
 
+    def get_shortanswerquestions(self):
+        return [x for x in self.get_coursework() if isinstance(x, ShortAnswerQuestion)]
+    
+    def get_shortanswerquestion(self, assignment_id):
+        coursework = self.get_coursework(assignment_id)
+        return coursework if isinstance(coursework, ShortAnswerQuestion) else None
+
+    def get_multiplechoicequestions(self):
+        return [x for x in self.get_coursework() if isinstance(x, MultipleChoiceQuestion)]
+    
+    def get_multiplechoicequestion(self, assignment_id):
+        coursework = self.get_coursework(assignment_id)
+        return coursework if isinstance(coursework, MultipleChoiceQuestion) else None
+    
     def get_students(self):
-        return [Student(x, self.service) for x in self.service.courses().students().list(courseId=self.id).execute()['students']]
+        return [Student(x, self.service) for x in self.service.courses().students().list(courseId=self.id).execute().get('students',[])]
     
     def get_student(self, user_id):
         return Student(self.service.courses().students().get(courseId=self.id, userId=user_id).execute(), self.service)
 
     def get_teachers(self):
-        return [Teacher(x, self.service) for x in self.service.courses().teachers().list(courseId=self.id).execute()['teachers']]
+        return [Teacher(x, self.service) for x in self.service.courses().teachers().list(courseId=self.id).execute().get('teachers',[])]
     
     def get_teacher(self, user_id):
         return Teacher(self.service.courses().teachers().get(courseId=self.id, userId=user_id).execute(), self.service)
@@ -34,14 +73,8 @@ class Course(ClassroomObject):
 
     # TODO: delete() for both students and teachers
 
-    # TODO: topics
-    #       create(courseId, body=None)
-    #       delete(courseId, id)
-    #       get(courseId, id)
-    #       list(courseId, pageSize=None, pageToken=None)
-    #       patch(courseId, id, body=None, updateMask=None)
     def get_topics(self):
-        return [Topic(x, self.service) for x in self.service.courses().topics().list(courseId=self.id).execute()['topics']]
+        return [Topic(x, self.service) for x in self.service.courses().topics().list(courseId=self.id).execute().get('topics',[])]
     
     def get_topic(self, topic_id):
         return Topic(self.service.courses().topics().get(courseId=self.id, id=topic_id).execute(), self.service)
@@ -49,8 +82,11 @@ class Course(ClassroomObject):
     def delete_topic(self, topic_id):
         return self.service().coureses().topics().delete(courseId=self.id, id=topic_id).execute()
 
-    def edit_topic(self, topic_id, body, mask):
-        return Topic(self.service.courses().topics().patch(courseId=self.id, id=topic_id, body=body, updateMask=mask).execute(), self.service)
+    def patch_topic(self, topic_id, body, mask):
+        return self.get_topic(topic_id).patch(body, mask)
+        # return Topic(self.service.courses().topics().patch(courseId=self.id, id=topic_id, body=body, updateMask=mask).execute(), self.service)
+
+    edit_topic = patch_topic
 
     def create_topic(self, body):
         '''
@@ -67,17 +103,43 @@ class Course(ClassroomObject):
     create(courseId, body=None)
     delete(courseId, id)
     get(courseId, id)
-    list(courseId, courseWorkMaterialStates=None, materialDriveId=None, materialLink=None, orderBy=None, pageSize=None, pageToken=None)
     patch(courseId, id, body=None, updateMask=None)
     '''
     def create_material(self, body):
-        return Material(self.service.courses().materials().create(courseId=self.id, body=body).execute(), self.service)
+        return CourseWorkMaterial(self.service.courses().courseWorkMaterials().create(courseId=self.id, body=body).execute(), self.service)
     
     def delete_material(self, material_id):
-        return self.service.courses().materials().delete(courseId=self.id, id=material_id).execute()
+        return self.service.courses().courseWorkMaterials().delete(courseId=self.id, id=material_id).execute()
     
     def get_material(self, material_id):
-        return Material(self.service.courses().materials().get(courseId=self.id, id=material_id).execute(), self.service)
+        return CourseWorkMaterial(self.service.courses().courseWorkMaterials().get(courseId=self.id, id=material_id).execute(), self.service)
     
-    def get_materials(self):
-        return [Material(x, self.service) for x in self.service.courses().materials().list(courseId=self.id).execute()['materials']]
+    def get_materials(self, states=None, drive_id=None, link=None, order_by=None):
+        '''
+        state = [
+            COURSEWORK_MATERIAL_STATE_UNSPECIFIED
+            PUBLISHED
+            DRAFT
+            DELETED
+        ]
+        drive_id = ID matches the provided string
+        link = URL partially matches the provided string
+        If both drive_id and link are provided, material must match both filters
+        orderBy = 'updateTime asc' or 'updateTime desc'
+        '''
+        return [CourseWorkMaterial(x, self.service) for x in self.service.courses().courseWorkMaterials().list(courseId=self.id, courseWorkMaterialStates=states,materialDriveId=drive_id,materialLink=link,orderBy=order_by).execute().get('materials',[])]
+
+    def patch_material(self, material_id, body, update_mask):
+        '''
+        body = object(CourseWorkMaterial)
+        update_mask = comma-separated string of fields from these:
+            title
+            description
+            state
+            scheduledTime
+            topicId
+        '''
+        return self.get_material(material_id).patch(body, update_mask)
+        # return CourseWorkMaterial(self.service.courses().courseWorkMaterials().patch(courseId=self.id, id=material_id, body=body, updateMask=update_mask).execute(), self.service)
+    
+    edit_material = patch_material

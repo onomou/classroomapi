@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "classroomapi"
+description = "API wrapper for the Google Classroom LMS"
+requires-python = ">=3.7"
+
+dynamic = ["version"]
+# version from:
+#      with open("classroomapi/__init__.py", "r") as fd:
+#          classroomapi/__init__.py, version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', fd.read(), re.MULTILINE).group(1)
+# long_description from:
+#     this_directory = path.abspath(path.dirname(__file__))
+#     with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
+#        long_description = f.read()
+
+# version = "0.1.0"
+authors = [
+  { name="Steven Williams", email="onomou@gmail.com" },
+]
+readme = "README.md"
+license = {text = "MIT License"}
+# include_package_data = true
+dependencies = [
+    "google-api-python-client",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
+]
+
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://github.com/onomou/classroomapi"
+Issues = "https://github.com/onomou/classroomapi/issues"
+
+[tool.setuptools]
+packages = ["classroomapi"]
+
+[tool.setuptools.dynamic]
+version = {attr = "classroomapi.__version__"}
