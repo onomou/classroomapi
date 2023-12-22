@@ -6,7 +6,6 @@ class Topic(ClassroomObject):
         super().__init__(attributes)
     
     def patch(self, body, mask):
-        self = Topic(self.service.courses().topics().patch(courseId=self.courseId, id=self.topicId, body=body, updateMask=mask).execute(), self.service)
-        return self
+        return Topic(self.service.courses().topics().patch(courseId=self.courseId, id=self.topicId, body=body, updateMask=mask).execute(), self.service)
 
     edit = patch

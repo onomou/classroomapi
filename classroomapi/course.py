@@ -54,6 +54,57 @@ class Course(ClassroomObject):
         coursework = self.get_coursework(assignment_id)
         return coursework if isinstance(coursework, MultipleChoiceQuestion) else None
     
+    def create_coursework(self, body):
+        '''
+        body = COURSEWORK
+            {
+                "title": string, # required
+                "workType":  # required
+                    COURSE_WORK_TYPE_UNSPECIFIED	No work type specified. This is never returned.
+                    ASSIGNMENT	An assignment.
+                    SHORT_ANSWER_QUESTION	A short answer question.
+                    MULTIPLE_CHOICE_QUESTION
+                "description": string,
+                "materials": [
+                    {
+                    object (Material)
+                    }
+                ],
+                "state": enum (CourseWorkState),
+                "dueDate": {
+                    object (Date)
+                },
+                "dueTime": {
+                    object (TimeOfDay)
+                },
+                "scheduledTime": string,
+                "maxPoints": number,
+                "assigneeMode": enum (AssigneeMode),
+                "individualStudentsOptions": {
+                    object (IndividualStudentsOptions)
+                },
+                "submissionModificationMode": enum (SubmissionModificationMode),
+                "topicId": string,
+
+                "multipleChoiceQuestion": { # only for multiple choice questions
+                    object (MultipleChoiceQuestion)
+                }
+            }
+        '''
+        return CourseWork(self.service.courses().courseWork().create(courseId=self.id, body=body).execute(), self.service)
+
+    def create_assignment(self, body):
+        body['workType'] = 'ASSIGNMENT'
+        return Assignment(self.create_material(body))
+
+    def create_shortanswerquestion(self, body):
+        body['workType'] = 'SHORT_ANSWER_QUESTION'
+        return ShortAnswerQuestion(self.create_material(body))
+
+    def create_multiplechoicequestion(self, body):
+        body['workType'] = 'MULTIPLE_CHOICE_QUESTION'
+        return MultipleChoiceQuestion(self.create_material(body))
+
     def get_students(self):
         return [Student(x, self.service) for x in self.service.courses().students().list(courseId=self.id).execute().get('students',[])]
     

@@ -15,8 +15,6 @@ class CourseWorkMaterial(ClassroomObject):
             scheduledTime
             topicId
         '''
-        # TODO: does replacing self like this work?
-        self = CourseWorkMaterial(self.service.courses().courseWorkMaterials().patch(courseId=self.courseId, id=self.id, body=body, updateMask=update_mask).execute(), self.service)
-        return self
+        return CourseWorkMaterial(self.service.courses().courseWorkMaterials().patch(courseId=self.courseId, id=self.id, body=body, updateMask=update_mask).execute(), self.service)
     
     edit = patch
